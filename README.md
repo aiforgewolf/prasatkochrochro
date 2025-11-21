@@ -2,6 +2,8 @@
 
 Funkční 2D prohlížečový platformer v Reactu, kde hrajete za mladé divoké prasátko **Přímo**, které hledá své ukradené lanýže v Kouzelném Lanýžovém Lese.
 
+## 🎮 [HRÁT HRU](https://aiforgewolf.github.io/prasatkochrochro/) 🎮
+
 ## 🎮 O Hře
 
 Přímo musí:
@@ -63,25 +65,36 @@ npm run build
 
 Build se vytvoří ve složce `build/` a je připraven k nasazení.
 
-## 🌐 Nasazení na Railway.com
+## 🌐 Nasazení na GitHub Pages
 
-### Automatické Nasazení
+### Automatické Nasazení (Doporučeno)
 
-1. **Připojte GitHub repozitář k Railway:**
-   - Přihlaste se na [railway.app](https://railway.app)
-   - Klikněte na "New Project" → "Deploy from GitHub repo"
-   - Vyberte tento repozitář
+Tento projekt je nakonfigurován pro automatické nasazení na GitHub Pages pomocí GitHub Actions.
 
-2. **Railway automaticky detekuje React app a použije správné build příkazy:**
-   - Build Command: `npm run build`
-   - Start Command: `npx serve -s build -p $PORT`
+**Jak to funguje:**
+1. Při každém push do branch `claude/react-platformer-game-018utKngUtzkVygTx9Xy6fy2`, `main` nebo `master`
+2. GitHub Actions automaticky:
+   - Nainstaluje závislosti
+   - Vytvoří production build
+   - Nasadí na GitHub Pages
 
-3. **Nastavte proměnné prostředí (volitelné):**
-   - `NODE_ENV=production`
+**První nasazení - aktivace GitHub Pages:**
+1. Jděte do nastavení repozitáře na GitHubu: `Settings` → `Pages`
+2. V sekci "Build and deployment" vyberte **Source: GitHub Actions**
+3. Po dalším push se hra automaticky nasadí
 
-### Manuální Konfigurace
+**URL hry:**
+- 🎮 **https://aiforgewolf.github.io/prasatkochrochro/**
 
-Pokud potřebujete vlastní konfiguraci, Railway používá `railway.json` nebo `Procfile`.
+### Manuální Deploy
+
+Pokud chcete nasadit manuálně (není doporučeno kvůli omezením branch):
+
+```bash
+npm run deploy
+```
+
+Poznámka: Manuální deploy může selhat kvůli omezením Git push. Doporučujeme použít automatické nasazení přes GitHub Actions.
 
 ## 🏗️ Technická Specifikace
 
