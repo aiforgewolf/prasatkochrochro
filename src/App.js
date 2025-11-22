@@ -82,11 +82,11 @@ const LEVEL_2_DATA = {
   ],
   enemies: [
     // Jednorožci - magičtí nepřátelé co nabíjejí na hráče
-    { id: 'e1', x: 150, y: 410, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    { id: 'e1', x: 320, y: 340, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
     { id: 'e2', x: 500, y: 270, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
-    { id: 'e3', x: 850, y: 340, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    { id: 'e3', x: 860, y: 270, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
     // Mix s ježky
-    { id: 'e4', x: 120, y: 430, width: 40, height: 40, velX: 2, type: 'hedgehog', health: 1 },
+    { id: 'e4', x: 220, y: 510, width: 40, height: 40, velX: 2, type: 'hedgehog', health: 1 },
     { id: 'e5', x: 650, y: 200, width: 40, height: 40, velX: -2, type: 'hedgehog', health: 1 },
     // Králík na vrchní platformě
     { id: 'e6', x: 550, y: 90, width: 50, height: 60, type: 'rabbit', health: 1, lastShot: 0 },
@@ -544,8 +544,8 @@ function App() {
       isGrounded: false,
       isAttacking: false,
       attackTimer: 0,
-      invincible: false,
-      invincibilityTimer: 0,
+      invincible: true, // Neporazitelnost na začátku levelu
+      invincibilityTimer: 2000, // 2 sekundy na zorientování
     }));
     lastUpdateTime.current = Date.now();
   };
