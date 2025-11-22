@@ -11,15 +11,17 @@ const PHYSICS = {
   DASH_DURATION: 200,
   INVINCIBILITY_DURATION: 1500,
   PROJECTILE_SPEED: 4,
+  UNICORN_CHARGE_SPEED: 4,
+  UNICORN_DETECTION_RANGE: 300,
 };
 
 const GAME_WIDTH = 1200;
 const GAME_HEIGHT = 600;
 
 // ============================================================================
-// II. DATA LEVELU
+// II. DATA LEVELŮ
 // ============================================================================
-const INITIAL_LEVEL_DATA = {
+const LEVEL_1_DATA = {
   platforms: [
     // Podlaha
     { id: 'p0', x: 0, y: 550, width: 1200, height: 50 },
@@ -60,6 +62,57 @@ const INITIAL_LEVEL_DATA = {
   goal: { x: 1050, y: 450, width: 100, height: 100 },
 };
 
+const LEVEL_2_DATA = {
+  platforms: [
+    // Podlaha (s propadlišti)
+    { id: 'p0', x: 0, y: 550, width: 300, height: 50 },
+    { id: 'p1', x: 400, y: 550, width: 300, height: 50 },
+    { id: 'p2', x: 800, y: 550, width: 400, height: 50 },
+    // Levitující platformy - meandr
+    { id: 'p3', x: 100, y: 450, width: 120, height: 20 },
+    { id: 'p4', x: 280, y: 380, width: 120, height: 20 },
+    { id: 'p5', x: 460, y: 310, width: 120, height: 20 },
+    { id: 'p6', x: 640, y: 240, width: 120, height: 20 },
+    { id: 'p7', x: 820, y: 310, width: 120, height: 20 },
+    { id: 'p8', x: 1000, y: 380, width: 120, height: 20 },
+    // Vrchní platformy
+    { id: 'p9', x: 200, y: 180, width: 150, height: 20 },
+    { id: 'p10', x: 500, y: 150, width: 200, height: 20 },
+    { id: 'p11', x: 850, y: 180, width: 150, height: 20 },
+  ],
+  enemies: [
+    // Jednorožci - magičtí nepřátelé co nabíjejí na hráče
+    { id: 'e1', x: 150, y: 410, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    { id: 'e2', x: 500, y: 270, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    { id: 'e3', x: 850, y: 340, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    // Mix s ježky
+    { id: 'e4', x: 120, y: 430, width: 40, height: 40, velX: 2, type: 'hedgehog', health: 1 },
+    { id: 'e5', x: 650, y: 200, width: 40, height: 40, velX: -2, type: 'hedgehog', health: 1 },
+    // Králík na vrchní platformě
+    { id: 'e6', x: 550, y: 90, width: 50, height: 60, type: 'rabbit', health: 1, lastShot: 0 },
+  ],
+  items: [
+    // Lanýže rozmístěné po meandrových platformách
+    { id: 'i1', x: 130, y: 430, type: 'truffle', collected: false },
+    { id: 'i2', x: 310, y: 360, type: 'truffle', collected: false },
+    { id: 'i3', x: 490, y: 290, type: 'truffle', collected: false },
+    { id: 'i4', x: 670, y: 220, type: 'truffle', collected: false },
+    { id: 'i5', x: 850, y: 290, type: 'truffle', collected: false },
+    { id: 'i6', x: 1030, y: 360, type: 'truffle', collected: false },
+    // Bonusové lanýže nahoře
+    { id: 'i7', x: 230, y: 160, type: 'truffle', collected: false },
+    { id: 'i8', x: 530, y: 130, type: 'truffle', collected: false },
+    { id: 'i9', x: 880, y: 160, type: 'truffle', collected: false },
+    { id: 'i10', x: 600, y: 530, type: 'truffle', collected: false },
+    // Dvě kuřecí stehna (těžší level)
+    { id: 'i11', x: 350, y: 360, type: 'drumstick', collected: false },
+    { id: 'i12', x: 920, y: 160, type: 'drumstick', collected: false },
+  ],
+  goal: { x: 1050, y: 330, width: 100, height: 100 },
+};
+
+const LEVELS = [LEVEL_1_DATA, LEVEL_2_DATA];
+
 // ============================================================================
 // III. UTILITY FUNKCE - KOLIZE
 // ============================================================================
@@ -79,7 +132,8 @@ function App() {
   // --------------------------------------------------------------------------
   // STAV HRY
   // --------------------------------------------------------------------------
-  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, victory
+  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, victory, levelComplete
+  const [currentLevel, setCurrentLevel] = useState(0); // Index do LEVELS array
   const [player, setPlayer] = useState({
     x: 100,
     y: 400,
@@ -97,11 +151,11 @@ function App() {
     invincibilityTimer: 0,
   });
 
-  const [platforms] = useState(INITIAL_LEVEL_DATA.platforms);
-  const [enemies, setEnemies] = useState(INITIAL_LEVEL_DATA.enemies);
-  const [items, setItems] = useState(INITIAL_LEVEL_DATA.items);
+  const [platforms, setPlatforms] = useState(LEVELS[0].platforms);
+  const [enemies, setEnemies] = useState(LEVELS[0].enemies);
+  const [items, setItems] = useState(LEVELS[0].items);
   const [projectiles, setProjectiles] = useState([]);
-  const [goal] = useState(INITIAL_LEVEL_DATA.goal);
+  const [goal, setGoal] = useState(LEVELS[0].goal);
 
   // Klávesy
   const keysPressed = useRef({});
@@ -322,6 +376,41 @@ function App() {
             ]);
           }
           return newEnemy;
+        } else if (enemy.type === 'unicorn') {
+          // Jednorožec - nabíjí na hráče když je v dosahu
+          let newEnemy = { ...enemy };
+          const distanceToPlayer = Math.abs(newEnemy.x - player.x);
+          const distanceY = Math.abs(newEnemy.y - player.y);
+
+          // Pokud je hráč v dosahu a přibližně na stejné výšce, nabij!
+          if (distanceToPlayer < PHYSICS.UNICORN_DETECTION_RANGE && distanceY < 100) {
+            newEnemy.charging = true;
+            // Určit směr k hráči
+            if (player.x > newEnemy.x) {
+              newEnemy.velX = PHYSICS.UNICORN_CHARGE_SPEED;
+            } else {
+              newEnemy.velX = -PHYSICS.UNICORN_CHARGE_SPEED;
+            }
+          } else {
+            // Když není v dosahu, zastav
+            newEnemy.charging = false;
+            newEnemy.velX = 0;
+          }
+
+          // Pohyb
+          newEnemy.x += newEnemy.velX * deltaTime;
+
+          // Kontrola hranic
+          if (newEnemy.x <= 0) {
+            newEnemy.x = 0;
+            newEnemy.velX = 0;
+          }
+          if (newEnemy.x + newEnemy.width >= GAME_WIDTH) {
+            newEnemy.x = GAME_WIDTH - newEnemy.width;
+            newEnemy.velX = 0;
+          }
+
+          return newEnemy;
         }
         return enemy;
       });
@@ -339,25 +428,33 @@ function App() {
 
     // === KOLIZE HRÁČE S NEPŘÁTELI ===
     setEnemies((prevEnemies) => {
-      const survivingEnemies = prevEnemies.filter((enemy) => {
-        if (checkAABBCollision(player, enemy)) {
-          if (player.isAttacking) {
-            // Zničení nepřítele
-            setPlayer((p) => ({ ...p, score: p.score + 50 }));
-            return false; // Odstranit nepřítele
-          } else if (!player.invincible) {
-            // Hráč je zasažen
-            setPlayer((p) => ({
-              ...p,
-              lives: p.lives - 1,
-              invincible: true,
-              invincibilityTimer: PHYSICS.INVINCIBILITY_DURATION,
-            }));
+      return prevEnemies
+        .map((enemy) => {
+          if (checkAABBCollision(player, enemy)) {
+            if (player.isAttacking) {
+              // Snížení zdraví nepřítele
+              const newHealth = (enemy.health || 1) - 1;
+              if (newHealth <= 0) {
+                // Zničení nepřítele
+                setPlayer((p) => ({ ...p, score: p.score + 50 }));
+                return null; // Označit k odstranění
+              } else {
+                // Nepřítel přežil útok
+                return { ...enemy, health: newHealth };
+              }
+            } else if (!player.invincible) {
+              // Hráč je zasažen
+              setPlayer((p) => ({
+                ...p,
+                lives: p.lives - 1,
+                invincible: true,
+                invincibilityTimer: PHYSICS.INVINCIBILITY_DURATION,
+              }));
+            }
           }
-        }
-        return true;
-      });
-      return survivingEnemies;
+          return enemy;
+        })
+        .filter((enemy) => enemy !== null); // Odstranit zničené nepřátele
     });
 
     // === KOLIZE HRÁČE S PROJEKTILY ===
@@ -396,7 +493,11 @@ function App() {
 
     // === KONTROLA VÍTĚZSTVÍ (DOSAŽENÍ CÍLE) ===
     if (checkAABBCollision(player, goal)) {
-      setGameState('victory');
+      if (currentLevel < LEVELS.length - 1) {
+        setGameState('levelComplete');
+      } else {
+        setGameState('victory');
+      }
     }
 
     // === KONTROLA PROHRY ===
@@ -423,8 +524,40 @@ function App() {
   }, [gameState, gameLoop]);
 
   // --------------------------------------------------------------------------
-  // RESTART HRY
+  // SPRÁVA LEVELŮ
   // --------------------------------------------------------------------------
+  const loadLevel = (levelIndex) => {
+    const levelData = LEVELS[levelIndex];
+    setCurrentLevel(levelIndex);
+    setPlatforms(levelData.platforms);
+    setEnemies(levelData.enemies.map((e) => ({ ...e })));
+    setItems(levelData.items.map((i) => ({ ...i, collected: false })));
+    setGoal(levelData.goal);
+    setProjectiles([]);
+    // Reset pozice hráče, ale zachovat skóre a životy
+    setPlayer((prev) => ({
+      ...prev,
+      x: 100,
+      y: 400,
+      velX: 0,
+      velY: 0,
+      isGrounded: false,
+      isAttacking: false,
+      attackTimer: 0,
+      invincible: false,
+      invincibilityTimer: 0,
+    }));
+    lastUpdateTime.current = Date.now();
+  };
+
+  const nextLevel = () => {
+    const nextLevelIndex = currentLevel + 1;
+    if (nextLevelIndex < LEVELS.length) {
+      loadLevel(nextLevelIndex);
+      setGameState('playing');
+    }
+  };
+
   const restartGame = () => {
     setPlayer({
       x: 100,
@@ -442,11 +575,8 @@ function App() {
       invincible: false,
       invincibilityTimer: 0,
     });
-    setEnemies(INITIAL_LEVEL_DATA.enemies.map((e) => ({ ...e })));
-    setItems(INITIAL_LEVEL_DATA.items.map((i) => ({ ...i, collected: false })));
-    setProjectiles([]);
+    loadLevel(0);
     setGameState('playing');
-    lastUpdateTime.current = Date.now();
   };
 
   // --------------------------------------------------------------------------
@@ -476,9 +606,10 @@ function App() {
         <div style={styles.gameArea}>
           {/* UI - Score a Lives */}
           <div style={styles.ui}>
+            <div style={styles.uiItem}>📍 Level: {currentLevel + 1}/{LEVELS.length}</div>
             <div style={styles.uiItem}>❤️ Životy: {player.lives}</div>
             <div style={styles.uiItem}>🏆 Skóre: {player.score}</div>
-            <div style={styles.uiItem}>🍄 Lanýže: {items.filter((i) => i.type === 'truffle' && i.collected).length}/10</div>
+            <div style={styles.uiItem}>🍄 Lanýže: {items.filter((i) => i.type === 'truffle' && i.collected).length}/{items.filter((i) => i.type === 'truffle').length}</div>
           </div>
 
           {/* Platformy */}
@@ -512,21 +643,39 @@ function App() {
           </div>
 
           {/* Nepřátelé */}
-          {enemies.map((enemy) => (
-            <div
-              key={enemy.id}
-              style={{
-                ...styles.enemy,
-                left: enemy.x,
-                top: enemy.y,
-                width: enemy.width,
-                height: enemy.height,
-                backgroundColor: enemy.type === 'hedgehog' ? '#696969' : '#ffffff',
-              }}
-            >
-              {enemy.type === 'hedgehog' ? '🦔' : '🐰'}
-            </div>
-          ))}
+          {enemies.map((enemy) => {
+            let bgColor = '#ffffff';
+            let emoji = '🐰';
+            if (enemy.type === 'hedgehog') {
+              bgColor = '#696969';
+              emoji = '🦔';
+            } else if (enemy.type === 'unicorn') {
+              bgColor = enemy.charging ? '#ff1493' : '#dda0dd';
+              emoji = '🦄';
+            }
+
+            return (
+              <div
+                key={enemy.id}
+                style={{
+                  ...styles.enemy,
+                  left: enemy.x,
+                  top: enemy.y,
+                  width: enemy.width,
+                  height: enemy.height,
+                  backgroundColor: bgColor,
+                  border: enemy.health && enemy.health > 1 ? '3px solid gold' : '2px solid #000',
+                }}
+              >
+                {emoji}
+                {enemy.health && enemy.health > 1 && (
+                  <div style={{ position: 'absolute', top: '-15px', fontSize: '12px', fontWeight: 'bold' }}>
+                    ❤️{enemy.health}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {/* Projektily */}
           {projectiles.map((proj) => (
@@ -575,12 +724,26 @@ function App() {
         </div>
       )}
 
+      {/* LEVEL DOKONČEN */}
+      {gameState === 'levelComplete' && (
+        <div style={styles.menu}>
+          <h1 style={styles.title}>✨ LEVEL DOKONČEN! ✨</h1>
+          <p style={styles.subtitle}>Skvělá práce! Našli jste všechny lanýže v Level {currentLevel + 1}!</p>
+          <p style={styles.subtitle}>Aktuální skóre: {player.score}</p>
+          <p style={styles.subtitle}>Životy: {player.lives} ❤️</p>
+          <button style={styles.button} onClick={nextLevel}>
+            POKRAČOVAT NA LEVEL {currentLevel + 2}
+          </button>
+        </div>
+      )}
+
       {/* GAME OVER */}
       {gameState === 'gameOver' && (
         <div style={styles.menu}>
           <h1 style={styles.title}>💀 GAME OVER 💀</h1>
           <p style={styles.subtitle}>Přímovi došly životy...</p>
           <p style={styles.subtitle}>Finální skóre: {player.score}</p>
+          <p style={styles.subtitle}>Dostal jste se na Level {currentLevel + 1}</p>
           <button style={styles.button} onClick={restartGame}>
             ZKUSIT ZNOVU
           </button>
@@ -591,7 +754,8 @@ function App() {
       {gameState === 'victory' && (
         <div style={styles.menu}>
           <h1 style={styles.title}>🎉 VÍTĚZSTVÍ! 🎉</h1>
-          <p style={styles.subtitle}>Přímo našel své lanýže a vrátil se domů!</p>
+          <p style={styles.subtitle}>Přímo našel všechny lanýže a vrátil se domů!</p>
+          <p style={styles.subtitle}>Dokončili jste všech {LEVELS.length} levelů!</p>
           <p style={styles.subtitle}>Finální skóre: {player.score}</p>
           <button style={styles.button} onClick={restartGame}>
             HRÁT ZNOVU
