@@ -6,10 +6,11 @@ Funkční 2D prohlížečový platformer v Reactu, kde hrajete za mladé divoké
 
 ## 🎮 O Hře
 
-Přímo musí:
-- 🍄 Najít všech 10 ukradených lanýžů
+Přímo musí projít **2 levely** plné nebezpečí a překážek:
+- 🍄 Najít všechny ukradené lanýže v každém levelu
 - 🦔 Vyhnout se nebo porazit agresivní ježky
 - 🐰 Uhnout projektilům od králíků-lupičů
+- 🦄 Přežít útok magických jednorožců (Level 2)
 - 🏠 Najít cestu zpět do svého doupěte
 
 ## 🕹️ Ovládání
@@ -31,14 +32,35 @@ Přímo musí:
 
 ### Nepřátelé
 1. **Ježci (🦔)**: Pohybují se tam a zpět po platformách, obrací se na konci
+   - Zdraví: 1
+   - Zničení: 1 útok Dash nebo skok na hlavu
 2. **Králíci (🐰)**: Stojí a střílí žaludové projektily každých 2.5s
+   - Zdraví: 1
+   - Nebezpečí: Projektily mohou zasáhnout na dálku
+3. **Jednorožci (🦄)** *(Level 2)*: Magičtí nepřátelé, kteří nabíjejí na hráče
+   - Zdraví: 2 (vyžaduje 2 útoky)
+   - Detekce: 300px horizontálně, 100px vertikálně
+   - Chování: Fialový když čeká, růžový když nabíjí
+   - Rychlost nabíjení: 4 (rychlejší než běh hráče!)
 
 ### Sběrné Předměty
 - **Lanýž (🍄)**: +100 bodů
 - **Kuřecí Stehno (🍗)**: +1 život (max 5)
 
+### Levely
+**Level 1 - Kouzelný Lanýžový Les:**
+- Úvodní level s základními platformami
+- 3x Ježci, 1x Králík
+- 10x Lanýže
+
+**Level 2 - Meandrový Hřeben:**
+- Těžší level s meandrovými platformami a propastmi
+- 3x Jednorožci, 2x Ježci, 1x Králík
+- 10x Lanýže, 2x Kuřecí stehna
+- Vyžaduje přesné skákání a dobré načasování
+
 ### Cíl
-Dostat se do červeného doupěte (🏠) na konci levelu s co nejvyšším skóre!
+Dokončit všechny levely a dostat se do červeného doupěte (🏠) s co nejvyšším skóre!
 
 ## 🚀 Instalace a Spuštění
 
@@ -126,15 +148,22 @@ package.json      # Dependencies a skripty
 
 ### Úprava Level Designu
 
-V `App.js` najděte sekci `INITIAL_LEVEL_DATA` a upravte:
+V `App.js` najděte sekce `LEVEL_1_DATA` a `LEVEL_2_DATA` a upravte:
 
 ```javascript
-const INITIAL_LEVEL_DATA = {
+const LEVEL_1_DATA = {
   platforms: [ /* Přidejte/upravte platformy */ ],
   enemies: [ /* Přidejte/upravte nepřátele */ ],
   items: [ /* Přidejte/upravte předměty */ ],
   goal: { /* Pozice cíle */ }
 };
+
+const LEVEL_2_DATA = {
+  // Podobná struktura jako Level 1
+};
+
+// Přidání do pole levelů
+const LEVELS = [LEVEL_1_DATA, LEVEL_2_DATA];
 ```
 
 ### Úprava Fyziky
@@ -156,21 +185,31 @@ const PHYSICS = {
 ✅ Kolizní detekce (AABB)
 ✅ Platformové skákání
 ✅ Útok Dash
-✅ AI nepřátel (patrol, střelba)
+✅ AI nepřátel (patrol, střelba, nabíjení)
+✅ **Multi-level systém s přechody**
+✅ **3 typy nepřátel s různými schopnostmi**
+✅ **Health systém pro nepřátele**
 ✅ Systém životů a skóre
+✅ **Persistence skóre a životů mezi levely**
 ✅ Sběr předmětů
+✅ **Level complete obrazovka**
 ✅ Vítězné/prohrané stavy
 ✅ Responsivní ovládání
 ✅ Neporazitelnost po zranění
+✅ **Vizuální indikátory zdraví nepřátel**
+✅ **Dynamické chování nepřátel (jednorožci)**
 
-## 🐛 Known Issues & Budoucí Vylepšení
+## 🐛 Budoucí Vylepšení
 
 - [ ] Zvukové efekty
 - [ ] Animace sprites
-- [ ] Více levelů
+- [ ] Více levelů (Level 3, 4, ...)
+- [ ] Nové typy nepřátel
+- [ ] Boss fights
 - [ ] Systém ukládání high score
 - [ ] Mobile touch ovládání
 - [ ] Particle efekty
+- [ ] Power-upy (dvojitý skok, štít, atd.)
 
 ## 📜 Licence
 
