@@ -403,7 +403,8 @@ function App() {
     if (player.lives <= 0) {
       setGameState('gameOver');
     }
-  }, [gameState, player, platforms, enemies, goal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, player, platforms, goal]);
 
   useEffect(() => {
     if (gameState === 'playing') {
