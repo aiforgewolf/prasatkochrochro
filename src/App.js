@@ -13,6 +13,9 @@ const PHYSICS = {
   PROJECTILE_SPEED: 4,
   UNICORN_CHARGE_SPEED: 4,
   UNICORN_DETECTION_RANGE: 300,
+  BEAR_WALK_SPEED: 1.5,
+  BEAR_CHARGE_SPEED: 3,
+  BEAR_DETECTION_RANGE: 250,
 };
 
 const GAME_WIDTH = 1200;
@@ -111,7 +114,63 @@ const LEVEL_2_DATA = {
   goal: { x: 1050, y: 330, width: 100, height: 100 },
 };
 
-const LEVELS = [LEVEL_1_DATA, LEVEL_2_DATA];
+const LEVEL_3_DATA = {
+  platforms: [
+    // Podlaha - rozdělená do sekcí
+    { id: 'p0', x: 0, y: 550, width: 250, height: 50 },
+    { id: 'p1', x: 350, y: 550, width: 200, height: 50 },
+    { id: 'p2', x: 650, y: 550, width: 250, height: 50 },
+    { id: 'p3', x: 1000, y: 550, width: 200, height: 50 },
+    // Nízká úroveň - široké platformy
+    { id: 'p4', x: 150, y: 450, width: 180, height: 20 },
+    { id: 'p5', x: 450, y: 420, width: 200, height: 20 },
+    { id: 'p6', x: 780, y: 450, width: 180, height: 20 },
+    // Střední úroveň
+    { id: 'p7', x: 50, y: 330, width: 150, height: 20 },
+    { id: 'p8', x: 300, y: 300, width: 180, height: 20 },
+    { id: 'p9', x: 580, y: 280, width: 200, height: 20 },
+    { id: 'p10', x: 880, y: 320, width: 150, height: 20 },
+    // Vysoká úroveň - menší platformy
+    { id: 'p11', x: 150, y: 200, width: 120, height: 20 },
+    { id: 'p12', x: 400, y: 170, width: 150, height: 20 },
+    { id: 'p13', x: 700, y: 190, width: 120, height: 20 },
+    { id: 'p14', x: 950, y: 210, width: 140, height: 20 },
+    // Nejvyšší platforma - boss arena
+    { id: 'p15', x: 350, y: 80, width: 500, height: 20 },
+  ],
+  enemies: [
+    // MEDVĚDI - Boss nepřátelé!
+    { id: 'e1', x: 200, y: 370, width: 70, height: 80, velX: PHYSICS.BEAR_WALK_SPEED, type: 'bear', health: 3, charging: false },
+    { id: 'e2', x: 600, y: 200, width: 70, height: 80, velX: -PHYSICS.BEAR_WALK_SPEED, type: 'bear', health: 3, charging: false },
+    { id: 'e3', x: 450, y: 0, width: 70, height: 80, velX: PHYSICS.BEAR_WALK_SPEED, type: 'bear', health: 3, charging: false },
+    // Mix s ostatními nepřáteli
+    { id: 'e4', x: 100, y: 290, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    { id: 'e5', x: 900, y: 280, width: 50, height: 60, velX: 0, type: 'unicorn', health: 2, charging: false, targetX: 0 },
+    { id: 'e6', x: 480, y: 380, width: 40, height: 40, velX: 2, type: 'hedgehog', health: 1 },
+    { id: 'e7', x: 810, y: 410, width: 40, height: 40, velX: -2, type: 'hedgehog', health: 1 },
+    { id: 'e8', x: 400, y: 130, width: 50, height: 60, type: 'rabbit', health: 1, lastShot: 0 },
+  ],
+  items: [
+    // Lanýže rozmístěné po platformách
+    { id: 'i1', x: 180, y: 430, type: 'truffle', collected: false },
+    { id: 'i2', x: 470, y: 400, type: 'truffle', collected: false },
+    { id: 'i3', x: 800, y: 430, type: 'truffle', collected: false },
+    { id: 'i4', x: 80, y: 310, type: 'truffle', collected: false },
+    { id: 'i5', x: 330, y: 280, type: 'truffle', collected: false },
+    { id: 'i6', x: 610, y: 260, type: 'truffle', collected: false },
+    { id: 'i7', x: 910, y: 300, type: 'truffle', collected: false },
+    { id: 'i8', x: 180, y: 180, type: 'truffle', collected: false },
+    { id: 'i9', x: 730, y: 170, type: 'truffle', collected: false },
+    { id: 'i10', x: 500, y: 60, type: 'truffle', collected: false },
+    // Více léčení pro boss level
+    { id: 'i11', x: 230, y: 180, type: 'drumstick', collected: false },
+    { id: 'i12', x: 980, y: 190, type: 'drumstick', collected: false },
+    { id: 'i13', x: 600, y: 60, type: 'drumstick', collected: false },
+  ],
+  goal: { x: 750, y: -20, width: 100, height: 100 },
+};
+
+const LEVELS = [LEVEL_1_DATA, LEVEL_2_DATA, LEVEL_3_DATA];
 
 // ============================================================================
 // III. UTILITY FUNKCE - KOLIZE
@@ -411,6 +470,76 @@ function App() {
           }
 
           return newEnemy;
+        } else if (enemy.type === 'bear') {
+          // Medvěd - pomalý ale silný, nabíjí když vidí hráče
+          let newEnemy = { ...enemy };
+          const distanceToPlayer = Math.abs(newEnemy.x - player.x);
+          const distanceY = Math.abs(newEnemy.y - player.y);
+
+          // Pokud je hráč blízko, nabíjí rychleji
+          if (distanceToPlayer < PHYSICS.BEAR_DETECTION_RANGE && distanceY < 120) {
+            newEnemy.charging = true;
+            // Určit směr k hráči a nabít
+            if (player.x > newEnemy.x) {
+              newEnemy.velX = PHYSICS.BEAR_CHARGE_SPEED;
+            } else {
+              newEnemy.velX = -PHYSICS.BEAR_CHARGE_SPEED;
+            }
+          } else {
+            // Normální patrol - chůze tam a zpět
+            newEnemy.charging = false;
+            // Zachovat směr pohybu, ale pomalou rychlostí
+            if (newEnemy.velX > 0) {
+              newEnemy.velX = PHYSICS.BEAR_WALK_SPEED;
+            } else if (newEnemy.velX < 0) {
+              newEnemy.velX = -PHYSICS.BEAR_WALK_SPEED;
+            }
+          }
+
+          // Pohyb
+          newEnemy.x += newEnemy.velX * deltaTime;
+
+          // Kontrola hranic a obrat směru
+          let shouldTurn = false;
+
+          if (newEnemy.x <= 0 || newEnemy.x + newEnemy.width >= GAME_WIDTH) {
+            shouldTurn = true;
+          }
+
+          // Kolize s platformami - náraz do stěny
+          platforms.forEach((platform) => {
+            if (checkAABBCollision(newEnemy, platform)) {
+              if (newEnemy.velX > 0 && newEnemy.x + newEnemy.width - newEnemy.velX * deltaTime <= platform.x) {
+                shouldTurn = true;
+              } else if (newEnemy.velX < 0 && newEnemy.x - newEnemy.velX * deltaTime >= platform.x + platform.width) {
+                shouldTurn = true;
+              }
+            }
+          });
+
+          // Detekce konce plošiny (aby nespadl)
+          let onPlatform = false;
+          platforms.forEach((platform) => {
+            const futureX = newEnemy.x + newEnemy.velX * 10; // Větší předvídání kvůli velikosti
+            const feetY = newEnemy.y + newEnemy.height;
+            if (
+              futureX + newEnemy.width / 2 > platform.x &&
+              futureX + newEnemy.width / 2 < platform.x + platform.width &&
+              Math.abs(feetY - platform.y) < 5
+            ) {
+              onPlatform = true;
+            }
+          });
+
+          if (!onPlatform && newEnemy.velX !== 0) {
+            shouldTurn = true;
+          }
+
+          if (shouldTurn) {
+            newEnemy.velX = -newEnemy.velX;
+          }
+
+          return newEnemy;
         }
         return enemy;
       });
@@ -652,6 +781,9 @@ function App() {
             } else if (enemy.type === 'unicorn') {
               bgColor = enemy.charging ? '#ff1493' : '#dda0dd';
               emoji = '🦄';
+            } else if (enemy.type === 'bear') {
+              bgColor = enemy.charging ? '#8b4513' : '#a0522d';
+              emoji = '🐻';
             }
 
             return (
