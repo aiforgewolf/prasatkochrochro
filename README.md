@@ -6,11 +6,12 @@ Funkční 2D prohlížečový platformer v Reactu, kde hrajete za mladé divoké
 
 ## 🎮 O Hře
 
-Přímo musí projít **2 levely** plné nebezpečí a překážek:
+Přímo musí projít **3 levely** plné nebezpečí a překážek:
 - 🍄 Najít všechny ukradené lanýže v každém levelu
 - 🦔 Vyhnout se nebo porazit agresivní ježky
 - 🐰 Uhnout projektilům od králíků-lupičů
 - 🦄 Přežít útok magických jednorožců (Level 2)
+- 🐻 Porazit mocné medvědy-bosse (Level 3)
 - 🏠 Najít cestu zpět do svého doupěte
 
 ## 🕹️ Ovládání
@@ -37,11 +38,20 @@ Přímo musí projít **2 levely** plné nebezpečí a překážek:
 2. **Králíci (🐰)**: Stojí a střílí žaludové projektily každých 2.5s
    - Zdraví: 1
    - Nebezpečí: Projektily mohou zasáhnout na dálku
-3. **Jednorožci (🦄)** *(Level 2)*: Magičtí nepřátelé, kteří nabíjejí na hráče
+3. **Jednorožci (🦄)** *(Level 2+)*: Magičtí nepřátelé, kteří nabíjejí na hráče
    - Zdraví: 2 (vyžaduje 2 útoky)
    - Detekce: 300px horizontálně, 100px vertikálně
    - Chování: Fialový když čeká, růžový když nabíjí
    - Rychlost nabíjení: 4 (rychlejší než běh hráče!)
+4. **Medvědi (🐻)** *(Level 3 - BOSS)*: Mohutní boss nepřátelé s adaptivní AI
+   - Zdraví: 3 (nejtěžší nepřítel, vyžaduje 3 útoky!)
+   - Velikost: 70x80 (větší než ostatní)
+   - Detekce: 250px horizontálně, 120px vertikálně
+   - Chování: Dual-mode AI
+     * **Patrol mód**: Pomalá chůze (1.5) tam a zpět
+     * **Charge mód**: Rychlá nabíječka (3) když detekuje hráče
+   - Vizuál: Hnědý když hlídá, tmavě hnědý když nabíjí
+   - Zlatý border a health counter (❤️3 → ❤️2 → ❤️1)
 
 ### Sběrné Předměty
 - **Lanýž (🍄)**: +100 bodů
@@ -59,8 +69,16 @@ Přímo musí projít **2 levely** plné nebezpečí a překážek:
 - 10x Lanýže, 2x Kuřecí stehna
 - Vyžaduje přesné skákání a dobré načasování
 
+**Level 3 - Boss Arena:**
+- FINÁLNÍ LEVEL s vertikálním platformingem
+- Multi-tier design - 4 úrovně výšky
+- **3x MEDVĚDI (BOSS)** + 2x Jednorožci, 2x Ježci, 1x Králík
+- 10x Lanýže, 3x Kuřecí stehna
+- Cíl nahoře vyžaduje vyšplhat celou arénou
+- Nejvyšší obtížnost - kombinace všech typů nepřátel!
+
 ### Cíl
-Dokončit všechny levely a dostat se do červeného doupěte (🏠) s co nejvyšším skóre!
+Dokončit všechny 3 levely, porazit boss medvědy a dostat se do červeného doupěte (🏠) s co nejvyšším skóre!
 
 ## 🚀 Instalace a Spuštění
 
