@@ -1,6 +1,188 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // ============================================================================
+// SOUND MANAGER - Web Audio API
+// ============================================================================
+class SoundManager {
+  constructor() {
+    this.audioContext = null;
+    this.masterGain = null;
+    this.musicGain = null;
+    this.sfxGain = null;
+    this.currentMusic = null;
+    this.initialized = false;
+  }
+
+  init() {
+    if (this.initialized) return;
+    try {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.connect(this.audioContext.destination);
+
+      this.musicGain = this.audioContext.createGain();
+      this.musicGain.gain.value = 0.3;
+      this.musicGain.connect(this.masterGain);
+
+      this.sfxGain = this.audioContext.createGain();
+      this.sfxGain.gain.value = 0.5;
+      this.sfxGain.connect(this.masterGain);
+
+      this.initialized = true;
+    } catch (e) {
+      console.warn('Web Audio API not supported', e);
+    }
+  }
+
+  playTone(frequency, duration, type = 'sine', volume = 1) {
+    if (!this.initialized) return;
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.value = volume * 0.3;
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    const now = this.audioContext.currentTime;
+    gain.gain.setValueAtTime(volume * 0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  // Zvukové efekty
+  playJump() {
+    this.playTone(400, 0.1, 'sine');
+    setTimeout(() => this.playTone(500, 0.1, 'sine'), 50);
+  }
+
+  playDash() {
+    this.playTone(200, 0.15, 'sawtooth', 0.8);
+  }
+
+  playHit() {
+    this.playTone(150, 0.1, 'square', 0.6);
+    setTimeout(() => this.playTone(100, 0.1, 'square', 0.6), 50);
+  }
+
+  playCollect() {
+    this.playTone(600, 0.1, 'sine');
+    setTimeout(() => this.playTone(800, 0.1, 'sine'), 50);
+    setTimeout(() => this.playTone(1000, 0.1, 'sine'), 100);
+  }
+
+  playHeal() {
+    this.playTone(400, 0.1, 'sine');
+    setTimeout(() => this.playTone(500, 0.1, 'sine'), 70);
+    setTimeout(() => this.playTone(600, 0.15, 'sine'), 140);
+  }
+
+  playHurt() {
+    this.playTone(300, 0.2, 'sawtooth', 0.7);
+    setTimeout(() => this.playTone(200, 0.2, 'sawtooth', 0.7), 100);
+  }
+
+  playGameOver() {
+    this.playTone(400, 0.3, 'sine');
+    setTimeout(() => this.playTone(350, 0.3, 'sine'), 300);
+    setTimeout(() => this.playTone(300, 0.5, 'sine'), 600);
+  }
+
+  playVictory() {
+    const melody = [523, 659, 784, 1047];
+    melody.forEach((freq, i) => {
+      setTimeout(() => this.playTone(freq, 0.2, 'sine'), i * 150);
+    });
+  }
+
+  playLevelComplete() {
+    const melody = [523, 587, 659, 784];
+    melody.forEach((freq, i) => {
+      setTimeout(() => this.playTone(freq, 0.15, 'sine'), i * 100);
+    });
+  }
+
+  // Background hudba
+  startMusic(level = 1) {
+    if (!this.initialized) return;
+    this.stopMusic();
+
+    const melodies = {
+      1: [523, 587, 659, 523, 587, 659, 698, 784], // C major scale
+      2: [440, 494, 523, 587, 523, 494, 440, 392], // A minor scale
+      3: [392, 440, 466, 523, 466, 440, 392, 349], // G minor scale (boss)
+    };
+
+    const melody = melodies[level] || melodies[1];
+    let index = 0;
+
+    const playNote = () => {
+      if (!this.currentMusic) return;
+
+      const freq = melody[index % melody.length];
+      this.playMusicNote(freq, 0.4);
+
+      // Bass note
+      setTimeout(() => {
+        if (this.currentMusic) {
+          this.playMusicNote(freq / 2, 0.3, 'triangle');
+        }
+      }, 200);
+
+      index++;
+    };
+
+    playNote();
+    this.currentMusic = setInterval(playNote, 500);
+  }
+
+  playMusicNote(frequency, duration, type = 'sine') {
+    if (!this.initialized) return;
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.value = 0.15;
+
+    osc.connect(gain);
+    gain.connect(this.musicGain);
+
+    const now = this.audioContext.currentTime;
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  stopMusic() {
+    if (this.currentMusic) {
+      clearInterval(this.currentMusic);
+      this.currentMusic = null;
+    }
+  }
+
+  setMusicVolume(volume) {
+    if (this.musicGain) {
+      this.musicGain.gain.value = volume;
+    }
+  }
+
+  setSfxVolume(volume) {
+    if (this.sfxGain) {
+      this.sfxGain.gain.value = volume;
+    }
+  }
+}
+
+const soundManager = new SoundManager();
+
+// ============================================================================
 // I. KONSTANTY FYZIKY
 // ============================================================================
 const PHYSICS = {
@@ -216,6 +398,11 @@ function App() {
   const [projectiles, setProjectiles] = useState([]);
   const [goal, setGoal] = useState(LEVELS[0].goal);
 
+  // Audio settings
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.3);
+  const [sfxVolume, setSfxVolume] = useState(0.5);
+
   // Klávesy
   const keysPressed = useRef({});
   const lastUpdateTime = useRef(Date.now());
@@ -275,12 +462,14 @@ function App() {
       if ((keysPressed.current['ArrowUp'] || keysPressed.current[' ']) && newPlayer.isGrounded) {
         newPlayer.velY = PHYSICS.JUMP_VELOCITY;
         newPlayer.isGrounded = false;
+        if (audioEnabled) soundManager.playJump();
       }
 
       // Útok Dash
       if ((keysPressed.current['d'] || keysPressed.current['D'] || keysPressed.current['Control']) && !newPlayer.isAttacking) {
         newPlayer.isAttacking = true;
         newPlayer.attackTimer = PHYSICS.DASH_DURATION;
+        if (audioEnabled) soundManager.playDash();
       }
 
       // === AKTUALIZACE ÚTOKU ===
@@ -566,9 +755,11 @@ function App() {
               if (newHealth <= 0) {
                 // Zničení nepřítele
                 setPlayer((p) => ({ ...p, score: p.score + 50 }));
+                if (audioEnabled) soundManager.playHit();
                 return null; // Označit k odstranění
               } else {
                 // Nepřítel přežil útok
+                if (audioEnabled) soundManager.playHit();
                 return { ...enemy, health: newHealth };
               }
             } else if (!player.invincible) {
@@ -579,6 +770,7 @@ function App() {
                 invincible: true,
                 invincibilityTimer: PHYSICS.INVINCIBILITY_DURATION,
               }));
+              if (audioEnabled) soundManager.playHurt();
             }
           }
           return enemy;
@@ -597,6 +789,7 @@ function App() {
               invincible: true,
               invincibilityTimer: PHYSICS.INVINCIBILITY_DURATION,
             }));
+            if (audioEnabled) soundManager.playHurt();
           }
           return false; // Odstranit projektil
         }
@@ -611,8 +804,10 @@ function App() {
         if (!item.collected && checkAABBCollision(player, { x: item.x, y: item.y, width: 15, height: 15 })) {
           if (item.type === 'truffle') {
             setPlayer((p) => ({ ...p, score: p.score + 100 }));
+            if (audioEnabled) soundManager.playCollect();
           } else if (item.type === 'drumstick') {
             setPlayer((p) => ({ ...p, lives: Math.min(p.lives + 1, 5) }));
+            if (audioEnabled) soundManager.playHeal();
           }
           return { ...item, collected: true };
         }
@@ -624,14 +819,26 @@ function App() {
     if (checkAABBCollision(player, goal)) {
       if (currentLevel < LEVELS.length - 1) {
         setGameState('levelComplete');
+        if (audioEnabled) {
+          soundManager.stopMusic();
+          soundManager.playLevelComplete();
+        }
       } else {
         setGameState('victory');
+        if (audioEnabled) {
+          soundManager.stopMusic();
+          soundManager.playVictory();
+        }
       }
     }
 
     // === KONTROLA PROHRY ===
     if (player.lives <= 0) {
       setGameState('gameOver');
+      if (audioEnabled) {
+        soundManager.stopMusic();
+        soundManager.playGameOver();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, player, platforms, goal]);
@@ -709,6 +916,43 @@ function App() {
   };
 
   // --------------------------------------------------------------------------
+  // AUDIO MANAGEMENT
+  // --------------------------------------------------------------------------
+  const toggleAudio = () => {
+    if (!audioEnabled) {
+      soundManager.init();
+      setAudioEnabled(true);
+      if (gameState === 'playing') {
+        soundManager.startMusic(currentLevel + 1);
+      }
+    } else {
+      setAudioEnabled(false);
+      soundManager.stopMusic();
+    }
+  };
+
+  const handleMusicVolumeChange = (volume) => {
+    setMusicVolume(volume);
+    soundManager.setMusicVolume(volume);
+  };
+
+  const handleSfxVolumeChange = (volume) => {
+    setSfxVolume(volume);
+    soundManager.setSfxVolume(volume);
+  };
+
+  // Start/stop music based on game state
+  useEffect(() => {
+    if (audioEnabled) {
+      if (gameState === 'playing') {
+        soundManager.startMusic(currentLevel + 1);
+      } else {
+        soundManager.stopMusic();
+      }
+    }
+  }, [gameState, currentLevel, audioEnabled]);
+
+  // --------------------------------------------------------------------------
   // RENDEROVÁNÍ
   // --------------------------------------------------------------------------
   return (
@@ -739,6 +983,41 @@ function App() {
             <div style={styles.uiItem}>❤️ Životy: {player.lives}</div>
             <div style={styles.uiItem}>🏆 Skóre: {player.score}</div>
             <div style={styles.uiItem}>🍄 Lanýže: {items.filter((i) => i.type === 'truffle' && i.collected).length}/{items.filter((i) => i.type === 'truffle').length}</div>
+          </div>
+
+          {/* Audio Controls */}
+          <div style={styles.audioControls}>
+            <button style={styles.audioButton} onClick={toggleAudio}>
+              {audioEnabled ? '🔊 ZAP' : '🔇 VYP'}
+            </button>
+            {audioEnabled && (
+              <div style={styles.volumeControls}>
+                <div style={styles.volumeControl}>
+                  <span>🎵</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={musicVolume}
+                    onChange={(e) => handleMusicVolumeChange(parseFloat(e.target.value))}
+                    style={styles.slider}
+                  />
+                </div>
+                <div style={styles.volumeControl}>
+                  <span>🔊</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={sfxVolume}
+                    onChange={(e) => handleSfxVolumeChange(parseFloat(e.target.value))}
+                    style={styles.slider}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Platformy */}
@@ -972,6 +1251,46 @@ const styles = {
     fontWeight: 'bold',
     color: '#333',
     boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+  },
+  audioControls: {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    zIndex: 100,
+  },
+  audioButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: '10px 15px',
+    borderRadius: '10px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    color: '#333',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+    transition: 'all 0.2s',
+  },
+  volumeControls: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: '10px',
+    borderRadius: '10px',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  volumeControl: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+  },
+  slider: {
+    width: '80px',
+    cursor: 'pointer',
   },
   platform: {
     position: 'absolute',
